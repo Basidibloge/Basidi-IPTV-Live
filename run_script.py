@@ -1,29 +1,40 @@
 import requests
 
-def update_from_4kgood():
-    # رابط السيرفر الخاص بك
+def update_limited_channels():
     url = "http://4kgood.org/get.php?username=9680723188&password=kyft6ks0g7gr7uw0xio6&type=m3u"
     
-    print("📡 جاري جلب القنوات من سيرفر 4K Good...")
+    print("📡 جاري جلب أفضل 5000 قناة من السيرفر...")
     
     try:
-        # إضافة User-Agent لضمان قبول الطلب من السيرفر
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
+        headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=30)
         
-        if response.status_code == 200 and "#EXTM3U" in response.text:
-            # كتابة محتوى السيرفر بالكامل في ملفك
+        if response.status_code == 200:
+            all_lines = response.text.splitlines()
+            
+            # التأكد من أن الملف يبدأ بـ #EXTM3U
+            final_lines = []
+            if all_lines[0].startswith("#EXTM3U"):
+                final_lines.append(all_lines[0])
+            
+            # أخذ أول 10,000 سطر بعد سطر البداية
+            # هذا سيعطيك حوالي 5000 قناة (كل قناة اسم ورابط)
+            limit = 10000
+            count = 0
+            for line in all_lines[1:]:
+                if count < limit:
+                    final_lines.append(line)
+                    count += 1
+                else:
+                    break
+            
             with open("channels.m3u", "w", encoding="utf-8") as f:
-                f.write(response.text)
-            print(f"✅ مبروك! تم تحديث القنوات بنجاح من سيرفرك الخاص.")
-        else:
-            print(f"❌ فشل الجلب: السيرفر رد بكود {response.status_code} أو الرابط غير صحيح.")
+                f.write("\n".join(final_lines))
+                
+            print(f"✅ تم! الملف الآن يحتوي على {len(final_lines)} سطر فقط.")
             
     except Exception as e:
-        print(f"❌ حدث خطأ أثناء الاتصال: {e}")
+        print(f"❌ خطأ: {e}")
 
 if __name__ == "__main__":
-    update_from_4kgood()
+    update_limited_channels()
