@@ -1,36 +1,55 @@
 import requests
 
-def get_bein_sports_package():
-    # روابط لمصادر متخصصة في الرياضة و beIN
-    # هذه الروابط يتم تحديثها يومياً من مطورين عالميين
-    sources = [
-        "https://raw.githubusercontent.com/m-v-p/Arabic_IPTV/main/Bein_Sports.m3u",
-        "https://raw.githubusercontent.com/Yousof-H/IPTV/main/Sport.m3u",
-        "https://iptv-org.github.io/iptv/categories/sports.m3u"
-    ]
+def get_basidi_final_server():
+    # السيرفر الذي طلبته (saartv)
+    portal = "http://tv.saartv.cc/stalker_portal/server/load.php"
+    mac = "00:1A:79:00:4D:84"
     
-    combined_m3u = "#EXTM3U\n"
-    print("📡 جاري البحث عن روابط beIN Sports الشغالة...")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (MAG210)',
+        'X-User-Agent': 'Model: MAG210; Link: Ethernet',
+        'Cookie': f'mac={mac}; stb_lang=en; timezone=Africa/Casablanca',
+        'Referer': f'{portal.replace("server/load.php", "c/")}',
+        'Connection': 'Keep-Alive'
+    }
 
-    for url in sources:
-        try:
-            # إضافة User-Agent لتجنب الحظر أثناء السحب
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(url, headers=headers, timeout=15)
-            if response.status_code == 200:
-                lines = response.text.splitlines()
-                for line in lines:
-                    if not line.startswith("#EXTM3U") and line.strip():
-                        combined_m3u += line + "\n"
-                print(f"✅ تم سحب قنوات من: {url}")
-        except:
-            print(f"❌ تعذر الاتصال بالمصدر: {url}")
+    print(f"📡 جاري الاتصال بسيرفر Basidi الخاص: {portal}")
 
-    # حفظ الملف النهائي
-    with open("channels.m3u", "w", encoding="utf-8") as f:
-        f.write(combined_m3u)
-    
-    print("🚀 مبروك! ملف Basidi الآن يحتوي على باقة beIN كاملة.")
+    try:
+        session = requests.Session()
+        # 1. عملية المصافحة (Handshake)
+        handshake_res = session.get(f"{portal}?type=stb&action=handshake&JsHttpRequest=1-xml", headers=headers, timeout=15).json()
+        token = handshake_res.get('js', {}).get('token')
+        
+        if not token:
+            print("❌ السيرفر لم يعطِ توكن. تأكد من أن الماك أدريس فعال.")
+            return
+
+        headers['Authorization'] = f'Bearer {token}'
+
+        # 2. جلب القنوات (ITV)
+        channels_res = session.get(f"{portal}?type=itv&action=get_all_channels&JsHttpRequest=1-xml", headers=headers, timeout=15).json()
+        channels = channels_res.get('js', {}).get('data', [])
+
+        if channels:
+            m3u = "#EXTM3U\n"
+            for ch in channels:
+                name = ch.get('name')
+                # تنظيف رابط القناة من إضافات ffmpeg
+                cmd = ch.get('cmd', '')
+                url = cmd.split(' ')[-1] if ' ' in cmd else cmd
+                
+                if url and url.startswith('http'):
+                    m3u += f"#EXTINF:-1, {name}\n{url}\n"
+            
+            with open("channels.m3u", "w", encoding="utf-8") as f:
+                f.write(m3u)
+            print(f"✅ تم بنجاح! تم استخراج {len(channels)} قناة، بما فيها beIN Sports.")
+        else:
+            print("⚠️ تم الاتصال ولكن قائمة القنوات فارغة (تأكد من حالة الاشتراك).")
+
+    except Exception as e:
+        print(f"❌ حدث خطأ تقني: {e}")
 
 if __name__ == "__main__":
-    get_bein_sports_package()
+    get_basidi_final_server()
