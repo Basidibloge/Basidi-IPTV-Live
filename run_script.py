@@ -1,55 +1,29 @@
 import requests
 
-def get_basidi_final_server():
-    # السيرفر الذي طلبته (saartv)
-    portal = "http://tv.saartv.cc/stalker_portal/server/load.php"
-    mac = "00:1A:79:00:4D:84"
+def update_from_4kgood():
+    # رابط السيرفر الخاص بك
+    url = "http://4kgood.org/get.php?username=9680723188&password=kyft6ks0g7gr7uw0xio6&type=m3u"
     
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (MAG210)',
-        'X-User-Agent': 'Model: MAG210; Link: Ethernet',
-        'Cookie': f'mac={mac}; stb_lang=en; timezone=Africa/Casablanca',
-        'Referer': f'{portal.replace("server/load.php", "c/")}',
-        'Connection': 'Keep-Alive'
-    }
-
-    print(f"📡 جاري الاتصال بسيرفر Basidi الخاص: {portal}")
-
+    print("📡 جاري جلب القنوات من سيرفر 4K Good...")
+    
     try:
-        session = requests.Session()
-        # 1. عملية المصافحة (Handshake)
-        handshake_res = session.get(f"{portal}?type=stb&action=handshake&JsHttpRequest=1-xml", headers=headers, timeout=15).json()
-        token = handshake_res.get('js', {}).get('token')
+        # إضافة User-Agent لضمان قبول الطلب من السيرفر
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
         
-        if not token:
-            print("❌ السيرفر لم يعطِ توكن. تأكد من أن الماك أدريس فعال.")
-            return
-
-        headers['Authorization'] = f'Bearer {token}'
-
-        # 2. جلب القنوات (ITV)
-        channels_res = session.get(f"{portal}?type=itv&action=get_all_channels&JsHttpRequest=1-xml", headers=headers, timeout=15).json()
-        channels = channels_res.get('js', {}).get('data', [])
-
-        if channels:
-            m3u = "#EXTM3U\n"
-            for ch in channels:
-                name = ch.get('name')
-                # تنظيف رابط القناة من إضافات ffmpeg
-                cmd = ch.get('cmd', '')
-                url = cmd.split(' ')[-1] if ' ' in cmd else cmd
-                
-                if url and url.startswith('http'):
-                    m3u += f"#EXTINF:-1, {name}\n{url}\n"
-            
+        response = requests.get(url, headers=headers, timeout=30)
+        
+        if response.status_code == 200 and "#EXTM3U" in response.text:
+            # كتابة محتوى السيرفر بالكامل في ملفك
             with open("channels.m3u", "w", encoding="utf-8") as f:
-                f.write(m3u)
-            print(f"✅ تم بنجاح! تم استخراج {len(channels)} قناة، بما فيها beIN Sports.")
+                f.write(response.text)
+            print(f"✅ مبروك! تم تحديث القنوات بنجاح من سيرفرك الخاص.")
         else:
-            print("⚠️ تم الاتصال ولكن قائمة القنوات فارغة (تأكد من حالة الاشتراك).")
-
+            print(f"❌ فشل الجلب: السيرفر رد بكود {response.status_code} أو الرابط غير صحيح.")
+            
     except Exception as e:
-        print(f"❌ حدث خطأ تقني: {e}")
+        print(f"❌ حدث خطأ أثناء الاتصال: {e}")
 
 if __name__ == "__main__":
-    get_basidi_final_server()
+    update_from_4kgood()
