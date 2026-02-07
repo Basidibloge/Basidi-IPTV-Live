@@ -1,6 +1,6 @@
 import requests
 
-def update_with_folders():
+def update_and_organize_final():
     url = "http://4kgood.org/get.php?username=9680723188&password=kyft6ks0g7gr7uw0xio6&type=m3u"
     
     try:
@@ -10,10 +10,17 @@ def update_with_folders():
         if response.status_code == 200:
             lines = response.text.splitlines()
             
-            # تعريف المجموعات
-            groups = {
-                "⚽ SPORTS": [], "🌍 ARABIC": [], "🎬 SERIES": [], "🎥 MOVIES": [],
-                "🇫🇷 FRENCH": [], "🇬🇧 ENGLISH": [], "🇹🇷 TURKISH": [], "👶 KIDS": []
+            # تصنيفات واضحة جداً
+            categories = {
+                "⚽ SPORTS": [],
+                "🌍 ARABIC": [],
+                "🎬 SERIES": [],
+                "🎥 MOVIES": [],
+                "👶 KIDS": [],
+                "🇫🇷 FRENCH": [],
+                "🇬🇧 ENGLISH": [],
+                "🇹🇷 TURKISH": [],
+                "📺 OTHERS": []
             }
             
             current_info = ""
@@ -21,34 +28,37 @@ def update_with_folders():
                 if line.startswith("#EXTINF"):
                     current_info = line
                 elif line.startswith("http"):
-                    info_up = current_info.upper()
-                    # تحديد القسم وإضافة وسم المجلد group-title
-                    tag = ""
-                    if any(x in info_up for x in ["SPORT", "BEIN", "SSC"]): tag = "⚽ SPORTS"
-                    elif any(x in info_up for x in ["SERIES", "RAMADAN", "SHAHID"]): tag = "🎬 SERIES"
-                    elif any(x in info_up for x in ["MOVIE", "NETFLIX", "BOX"]): tag = "🎥 MOVIES"
-                    elif any(x in info_up for x in ["FRANCE", "FR:"]): tag = "🇫🇷 FRENCH"
-                    elif any(x in info_up for x in ["UK:", "USA:", "EN:"]): tag = "🇬🇧 ENGLISH"
+                    # تنظيف اسم القناة لاستخراجه بدقة
+                    raw_name = current_info.split(',')[-1].strip()
+                    info_up = raw_name.upper()
+                    
+                    # اختيار القسم المناسب
+                    if any(x in info_up for x in ["BEIN", "SPORT", "SSC", "KASS"]): tag = "⚽ SPORTS"
+                    elif any(x in info_up for x in ["SERIES", "RAMADAN", "SHAHID", "مسلسلات"]): tag = "🎬 SERIES"
+                    elif any(x in info_up for x in ["MOVIE", "NETFLIX", "BOX", "CINEMA"]): tag = "🎥 MOVIES"
+                    elif any(x in info_up for x in ["FRANCE", "FR:", "CANAL"]): tag = "🇫🇷 FRENCH"
+                    elif any(x in info_up for x in ["UK:", "USA:", "EN:", "ENGLISH"]): tag = "🇬🇧 ENGLISH"
                     elif any(x in info_up for x in ["TURK", "TR:"]): tag = "🇹🇷 TURKISH"
-                    elif any(x in info_up for x in ["KIDS", "DISNEY", "CARTOON"]): tag = "👶 KIDS"
-                    else: tag = "🌍 ARABIC"
+                    elif any(x in info_up for x in ["KIDS", "DISNEY", "CARTOON", "CN"]): tag = "👶 KIDS"
+                    elif any(x in info_up for x in ["MBC", "OSN", "ROTANA", "NILE", "MOROCCO"]): tag = "🌍 ARABIC"
+                    else: tag = "📺 OTHERS"
 
-                    # تعديل السطر لإضافة المجلد
-                    new_info = current_info.replace('#EXTINF:-1,', f'#EXTINF:-1 group-title="{tag}",')
-                    groups[tag].append(f"{new_info}\n{line}\n")
+                    # بناء السطر الجديد بالتنسيق الذي تعشقه التطبيقات
+                    formatted_entry = f'#EXTINF:-1 group-title="{tag}",{raw_name}\n{line}\n'
+                    categories[tag].append(formatted_entry)
 
-            # تجميع الـ 10,000 سطر
-            final_m3u = "#EXTM3U\n"
-            limit_per_cat = 600 # حوالي 1200 سطر لكل قسم
-            for g_name in groups:
-                final_m3u += "".join(groups[g_name][:limit_per_cat])
+            # تجميع الـ 10,000 سطر (5000 قناة)
+            final_content = "#EXTM3U\n"
+            for group in categories:
+                # نأخذ كمية متوازنة لضمان وجود كل الأقسام
+                final_content += "".join(categories[group][:650])
             
             with open("channels.m3u", "w", encoding="utf-8") as f:
-                f.write(final_m3u)
-            print("✅ تم إضافة وسوم المجموعات (group-title) بنجاح!")
+                f.write(final_content)
+            print("✅ مبروك! الملف الآن مقسم ومجلد بالكامل وجاهز للاستخدام.")
             
     except Exception as e:
         print(f"❌ خطأ: {e}")
 
 if __name__ == "__main__":
-    update_with_folders()
+    update_and_organize_final()
