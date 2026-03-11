@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل القنوات الذكي</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body { background: #000; color: #fff; margin: 0; font-family: sans-serif; }
+        #v { width: 100%; height: 40vh; background: #000; }
+        .list { padding: 10px; }
+        .ch { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.3s; }
+        .ch:hover { background: #222; }
+    </style>
+</head>
+<body>
+
+<video id="v" controls autoplay playsinline></video>
+<div class="list" id="list">جاري تحميل القنوات المرتبة...</div>
+
+<script>
+// بيانات السيرفر الخاصة بك
+const C = {h: "http://vlcdc.org:80", u: "lYG1EKR6m8", p: "uXcRu8sQ2S"};
+const v = document.getElementById('v');
+const hls = new Hls({ lowLatencyMode: true });
+
+// تحميل ملف القنوات الذي أنتجه ملف البايثون في GitHub
+fetch('channels.json')
+.then(r => r.json())
+.then(d => {
+    document.getElementById('list').innerHTML = d.map(c => 
+        `<div class="ch" onclick="play('${c.stream_id}')">▶ ${c.name}</div>`).join('');
+})
+.catch(() => {
+    document.getElementById('list').innerHTML = "حدث خطأ: تأكد من اكتمال تشغيل ملف البايثون على GitHub.";
+});
+
+function play(id) {
+    const url = `${C.h}/live/${C.u}/${C.p}/${id}.m3u8`;
+    if (Hls.isSupported()) {
+        hls.loadSource(url);
+        hls.attachMedia(v);
+        v.play();
+    }
+}
+</script>
+</body>
+</html>
