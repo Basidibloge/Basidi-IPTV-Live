@@ -1,11 +1,27 @@
-- name: Run Sorter
+name: Auto Update IPTV
+on:
+  push:
+  schedule:
+    - cron: '0 */6 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Run Sorter
         run: python sort_channels.py
       - name: Generate M3U
-        run: python generate_m3u.py  # أضف هذا السطر
+        run: python generate_m3u.py
       - name: Commit changes
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add channels.json channels.m3u # تأكد من إضافة الملفين معاً
-          git commit -m "Update channels and m3u" || exit 0
+          git add channels.json channels.m3u
+          git commit -m "Update channels list" || exit 0
           git push
