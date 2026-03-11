@@ -1,25 +1,19 @@
-name: Basidi Auto Update
-on:
-  schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Install dependencies
-        run: pip install requests
-      - name: Run Scraper
-        run: python run_script.py
-      - name: Save Results
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Action"
-          git add channels.m3u
-          git commit -m "🚀 Update Channels" || exit 0
-          git push
+import json
+import requests
+
+# بيانات السيرفر الجديد
+url = "http://vlcdc.org:80/player_api.php?username=lYG1EKR6m8&password=uXcRu8sQ2S&action=get_live_streams&category_id=1"
+data = requests.get(url).json()
+
+def get_priority(name):
+    n = name.lower()
+    if 'arabic' in n or 'عربية' in n: return 1
+    if 'french' in n or 'فرنسا' in n or 'fr' in n: return 2
+    return 3
+
+# الترتيب
+sorted_data = sorted(data, key=lambda x: get_priority(x['name']))
+
+# حفظ القنوات مرتبة
+with open('channels.json', 'w', encoding='utf-8') as f:
+    json.dump(sorted_data, f, ensure_ascii=False, indent=4)
